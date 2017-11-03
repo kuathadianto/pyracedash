@@ -51,6 +51,10 @@ def main():
                 theme.refresh(requests.get(url, timeout=0.1).json())
         except requests.exceptions.ConnectionError: # Cannot connect to host TODO: Percantik
             screen.fill((255, 0, 0))
+        except requests.exceptions.ReadTimeout:
+            screen.fill((0, 255, 0))
+        except KeyError:
+            screen.fill((255, 255, 255))
 
         pygame.display.update()
         clock.tick(int(config.get('global', 'FPS')))
