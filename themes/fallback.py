@@ -1,10 +1,16 @@
 class Fallback:
     '''Fallback template, if no matched template found.'''
 
-    needed_modules = ['carState', 'timings']
+    needed_modules = ['carState', 'timings', 'eventInformation']
 
     # Variables for drawing
     background_color = (0, 0, 0)
+    background_flash_at_hi_rpm_color = (122, 0, 0)
+    background_flash_counter = 0
+    background_flash_counter_max = 3
+    background_flash_visible = True
+    hi_rpm_percentage = 0.95
+
     anti_aliasing = True
     global_font = None
 
@@ -51,6 +57,16 @@ class Fallback:
     # Lap time
     lap_time_font_name = global_font
     lap_time_font_size = delta_font_size
+    lap_time_color = (198, 136, 35)
+
+    # Fuel warning
+    fuel_warning_font_color = (255, 255, 0)
+    fuel_warning_font_name = global_font
+    fuel_warning_font_size = delta_font_size
+    fuel_warning_active = False
+    fuel_flash_counter = 0
+    fuel_flash_counter_max = 40
+    fuel_flash_visible = True
 
     def __init__(self, pygame, screen, display_resolution):
         '''Init. Pass pygame, screen and display resolution as parameter.'''
@@ -68,6 +84,7 @@ class Fallback:
         self.fuel_font = pygame.font.SysFont(self.fuel_font_name, self.fuel_font_size)
         self.fuel_label_font = pygame.font.SysFont(self.fuel_label_font_name, self.fuel_label_font_size)
         self.lap_time_font = pygame.font.SysFont(self.lap_time_font_name, self.lap_time_font_size)
+        self.fuel_warning_font = pygame.font.SysFont(self.fuel_warning_font_name, self.fuel_warning_font_size)
 
     def speed_in_kph(self, speed_in_mps):
         '''Convert speed from meter per second to kilometer per hour.'''
@@ -89,7 +106,7 @@ class Fallback:
             out = '+'
 
         if time == -1:
-            return '-----'
+            return '-.---'
         else:
             return out + str("%.3f" % time)
 
@@ -105,12 +122,12 @@ class Fallback:
             color = (255, 127, 0)
         else:
             color = (255, 0, 0)
-        return (int(fuel_current * fuel_capacity), color)
+        return (str("%.1f" % (fuel_current * fuel_capacity)), color)
 
     def print_lap_time(self, time_in_s):
         '''Return lap time in this format: Minute:Second:Milisecond'''
         if time_in_s == -1:
-            return '--.--.---'
+            return '--:--.---'
         else:
             min = str(int(time_in_s / 60))
             sec = str("%.3f" % (time_in_s % 60))
@@ -120,11 +137,29 @@ class Fallback:
             if float(sec) < 10:
                 sec = '0' + sec
 
-            return min + '.' + sec
+            return min + ':' + sec
 
     def refresh(self, json_from_request):
         '''Refresh screen from every incoming request.'''
-        self.screen.fill(self.background_color)
+        # Flash at hi rpm
+        try:
+            background_flash_visible_needed = json_from_request['carState']['mRpm'] / json_from_request['carState']['mMaxRPM'] >= self.hi_rpm_percentage
+        except ZeroDivisionError:
+            background_flash_visible_needed = False
+
+        if background_flash_visible_needed and self.background_flash_visible:
+            self.screen.fill(self.background_flash_at_hi_rpm_color)
+        else:
+            self.screen.fill(self.background_color)
+
+        if background_flash_visible_needed:
+            self.background_flash_counter += 1
+            if self.background_flash_counter >= self.background_flash_counter_max:
+                self.background_flash_counter = 0
+                if self.background_flash_visible:
+                    self.background_flash_visible = False
+                else:
+                    self.background_flash_visible = True
 
         # Gear
         gear = self.gear_font.render(self.print_gear(json_from_request['carState']['mGear']), self.anti_aliasing, self.gear_color)
@@ -176,7 +211,7 @@ class Fallback:
 
         # Fuel
         fuel_output = self.print_fuel(json_from_request['carState']['mFuelLevel'], json_from_request['carState']['mFuelCapacity'])
-        fuel = self.fuel_font.render(str(fuel_output[0]), self.anti_aliasing, fuel_output[1])
+        fuel = self.fuel_font.render(fuel_output[0], self.anti_aliasing, fuel_output[1])
         fuel_pos_x = 10
         fuel_pos_y = gear_pos_y
         self.screen.blit(fuel, (fuel_pos_x, fuel_pos_y))
@@ -186,10 +221,53 @@ class Fallback:
         self.screen.blit(fuel_label, (fuel_pos_x, gear_pos_y + gear.get_rect().height - fuel_label.get_rect().height - 40))
 
         # Lap time
-        lap_time = self.lap_time_font.render(self.print_lap_time(json_from_request['timings']['mCurrentTime']), self.anti_aliasing, (255, 255,255))
+        lap_time = self.lap_time_font.render(self.print_lap_time(json_from_request['timings']['mCurrentTime']), self.anti_aliasing, self.lap_time_color)
         self.screen.blit(lap_time, (fuel_pos_x, delta_front_pos_y))
 
         # Last lap
-        last_lap_time = self.lap_time_font.render(self.print_lap_time(json_from_request['timings']['mLastLapTime']), self.anti_aliasing, (255, 255, 255))
+        last_lap_time = self.lap_time_font.render(self.print_lap_time(json_from_request['timings']['mLastLapTime']), self.anti_aliasing, self.lap_time_color)
         self.screen.blit(last_lap_time, (fuel_pos_x, delta_back_pos_y))
+
+        # Lap time label
+        lap_time_label = self.delta_label_font.render('Lap Time', self.anti_aliasing, self.delta_label_color)
+        self.screen.blit(lap_time_label, (fuel_pos_x, delta_front_label_pos_y))
+
+        # Last lap time label
+        last_lap_time_label = self.delta_label_font.render('Last Lap', self.anti_aliasing, self.delta_label_color)
+        self.screen.blit(last_lap_time_label, (fuel_pos_x, delta_back_label_pos_y))
+
+        # Fuel Warning
+        # Race is about to start, save current fuel
+        if json_from_request['carState']['mRpm'] == 0:
+            self.fuel_checkpoint = json_from_request['carState']['mFuelLevel']
+            self.now_is_lap = 0
+            self.last_lap_check = json_from_request['timings']['mLastLapTime']
+            self.fuel_warning_active = False
+
+        # Car crossing start/finish line
+        try:
+            if json_from_request['timings']['mLastLapTime'] != self.last_lap_check:
+                self.last_lap_check = json_from_request['timings']['mLastLapTime']
+                self.now_is_lap += 1
+                fuel_diff = self.fuel_checkpoint - json_from_request['carState']['mFuelLevel']
+                self.fuel_checkpoint = json_from_request['carState']['mFuelLevel']
+                if (json_from_request['eventInformation']['mLapsInEvent'] - self.now_is_lap) * fuel_diff >= json_from_request['carState']['mFuelLevel']:
+                    self.fuel_warning_active = True
+                else:
+                    self.fuel_warning_active = False
+        except AttributeError: # debug mode
+            self.fuel_warning_active = True
+
+        if self.fuel_warning_active and self.fuel_flash_visible:
+            fuel_warning = self.fuel_warning_font.render('FUEL', self.anti_aliasing, self.fuel_warning_font_color)
+            self.screen.blit(fuel_warning, (self.display_resolution[0] - 10 - fuel_warning.get_rect().width, delta_back_pos_y))
+
+        self.fuel_flash_counter += 1
+        if self.fuel_flash_counter >= self.fuel_flash_counter_max:
+            self.fuel_flash_counter = 0
+            if self.fuel_flash_visible:
+                self.fuel_flash_visible = False
+            else:
+                self.fuel_flash_visible = True
+
 
