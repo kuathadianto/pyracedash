@@ -10,7 +10,7 @@ from themes.fallback import Fallback
 def main():
     # Get configurations
     config = configparser.ConfigParser()
-    config.read(os.path.dirname(os.path.realpath(__file__)) + '/../conf.ini')
+    config.read(os.path.dirname(os.path.realpath(__file__)) + '/conf.ini')
 
     # Initialization
     pygame.init()
