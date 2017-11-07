@@ -17,7 +17,7 @@ def main():
     clock = pygame.time.Clock()
 
     # Set game display
-    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))))
+    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))), pygame.FULLSCREEN)
 
     # Set window caption
     pygame.display.set_caption(config.get('global', 'TITLE'))
@@ -40,6 +40,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_q:
+                    return
 
         # Get game data
         try:
