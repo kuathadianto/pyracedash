@@ -49,12 +49,18 @@ def main():
                     theme.refresh(json.load(json_data))
             else:
                 theme.refresh(requests.get(url, timeout=0.1).json())
-        except requests.exceptions.ConnectionError: # Cannot connect to host TODO: Percantik
-            screen.fill((255, 0, 0))
+        except requests.exceptions.ConnectionError: # Cannot connect to host
+            screen.fill((0, 0, 0))
+            f = pygame.font.SysFont(None, 32)
+            m = f.render('Connection error! Is Host IP address correct? Is CREST running?', True, (255, 255, 255))
+            screen.blit(m, (10, 10))
         except requests.exceptions.ReadTimeout:
-            screen.fill((0, 255, 0))
-        except KeyError:
-            screen.fill((255, 255, 255))
+            pass
+        except KeyError: # PCARS is not running or Shared Memory is disabled
+            screen.fill((0, 0, 0))
+            f = pygame.font.SysFont(None, 28)
+            m = f.render('Connection successful! Please run Project CARS with Shared Memory enabled.', True, (255, 255, 255))
+            screen.blit(m, (10, 10))
 
         pygame.display.update()
         clock.tick(int(config.get('global', 'FPS')))

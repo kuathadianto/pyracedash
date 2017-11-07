@@ -10,6 +10,7 @@ class Fallback:
     background_flash_counter_max = 3
     background_flash_visible = True
     hi_rpm_percentage = 0.95
+    driver_name = "Varezha G. Sanjaya"
 
     anti_aliasing = True
     global_font = None
@@ -30,7 +31,8 @@ class Fallback:
     speed_font_size = 250
 
     # kmh Label
-    kmh_label_color = (255, 255, 255)
+    white = (255, 255, 255)
+    kmh_label_color = white
     kmh_label_font_name = global_font
     kmh_label_font_size = 80
 
@@ -41,7 +43,7 @@ class Fallback:
     delta_font_size = 60
 
     # Delta time label
-    delta_label_color = (255, 255, 255)
+    delta_label_color = white
     delta_label_font_name = global_font
     delta_label_font_size = 25
 
@@ -50,7 +52,7 @@ class Fallback:
     fuel_font_size = 230
 
     # Fuel label
-    fuel_label_color = (255, 255, 255)
+    fuel_label_color = white
     fuel_label_font_name = global_font
     fuel_label_font_size = 80
 
@@ -139,18 +141,68 @@ class Fallback:
 
             return min + ':' + sec
 
+    def print_circle(self, color, pos, size):
+        '''Literally means.'''
+        self.pygame.draw.circle(self.screen, color, pos, size)
+
     def refresh(self, json_from_request):
         '''Refresh screen from every incoming request.'''
         # Flash at hi rpm
         try:
-            background_flash_visible_needed = json_from_request['carState']['mRpm'] / json_from_request['carState']['mMaxRPM'] >= self.hi_rpm_percentage
+            rpm_percentage = json_from_request['carState']['mRpm'] / json_from_request['carState']['mMaxRPM']
+            background_flash_visible_needed = rpm_percentage >= self.hi_rpm_percentage
         except ZeroDivisionError:
+            rpm_percentage = 0
             background_flash_visible_needed = False
 
         if background_flash_visible_needed and self.background_flash_visible:
             self.screen.fill(self.background_flash_at_hi_rpm_color)
         else:
             self.screen.fill(self.background_color)
+
+        # RPM Meter
+        circle_pos_y = 40
+        circle_size = 20
+        circle_x_modifier = 66
+        circle_left_color = (0, 0, 255)
+        circle_center_color = (0, 255, 0)
+        circle_right_color = (255, 0, 0)
+        if rpm_percentage >= 0.5:
+            circle_x = 40
+            self.print_circle(circle_left_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.6:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_left_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.7:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_left_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.8:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_left_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.82:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_center_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.84:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_center_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.86:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_center_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.88:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_center_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.90:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_right_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.915:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_right_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.93:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_right_color, (circle_x, circle_pos_y), circle_size)
+        if rpm_percentage >= 0.945:
+            circle_x += circle_x_modifier
+            self.print_circle(circle_right_color, (circle_x, circle_pos_y), circle_size)
 
         if background_flash_visible_needed:
             self.background_flash_counter += 1
@@ -269,5 +321,4 @@ class Fallback:
                 self.fuel_flash_visible = False
             else:
                 self.fuel_flash_visible = True
-
 
