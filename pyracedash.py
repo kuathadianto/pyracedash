@@ -4,7 +4,6 @@ import pygame
 import requests
 import sys
 import json
-from themes.fallback import Fallback
 
 
 def main():
@@ -17,13 +16,24 @@ def main():
     clock = pygame.time.Clock()
 
     # Set game display
-    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))), pygame.FULLSCREEN)
+    if config.get('global', 'FULLSCREEN') == '1':
+        fullscreen = pygame.FULLSCREEN
+    else:
+        fullscreen = 0
+
+    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))), fullscreen)
 
     # Set window caption
     pygame.display.set_caption(config.get('global', 'TITLE'))
 
     # Get theme
-    theme = Fallback(pygame, screen, (int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))))
+    try:
+        theme_name = config.get('global', 'THEME')
+        theme_class = getattr(__import__('themes.' + theme_name, fromlist=[theme_name]), theme_name)
+    except (ModuleNotFoundError, configparser.NoOptionError):
+        theme_class = getattr(__import__('themes.Fallback', fromlist=['Fallback']), 'Fallback')
+
+    theme = theme_class(pygame, screen, (int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))))
 
     # Create request url
     url = 'http://' + config.get('host', 'IP_ADDRESS') + ':' + config.get('host', 'PORT') + '/crest'
@@ -54,16 +64,12 @@ def main():
                 theme.refresh(requests.get(url, timeout=0.1).json())
         except requests.exceptions.ConnectionError: # Cannot connect to host
             screen.fill((0, 0, 0))
-            f = pygame.font.SysFont(None, 32)
-            m = f.render('Connection error! Is Host IP address correct? Is CREST running?', True, (255, 255, 255))
-            screen.blit(m, (10, 10))
+            screen.blit(pygame.font.SysFont(None, 32).render('Connection error! Is Host IP address correct? Is CREST running?', True, (255, 255, 255)), (10, 10))
         except requests.exceptions.ReadTimeout:
             pass
         except KeyError: # PCARS is not running or Shared Memory is disabled
             screen.fill((0, 0, 0))
-            f = pygame.font.SysFont(None, 28)
-            m = f.render('Connection successful! Please run Project CARS with Shared Memory enabled.', True, (255, 255, 255))
-            screen.blit(m, (10, 10))
+            screen.blit(pygame.font.SysFont(None, 28).render('Connection successful! Please run Project CARS with Shared Memory enabled.', True, (255, 255, 255)), (10, 10))
 
         pygame.display.update()
         clock.tick(int(config.get('global', 'FPS')))
