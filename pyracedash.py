@@ -63,11 +63,13 @@ def main():
             else:
                 theme.refresh(requests.get(url, timeout=0.1).json())
         except requests.exceptions.ConnectionError: # Cannot connect to host
+            # TODO: Make it prettier, and use relative font size?
             screen.fill((0, 0, 0))
             screen.blit(pygame.font.SysFont(None, 32).render('Connection error! Is Host IP address correct? Is CREST running?', True, (255, 255, 255)), (10, 10))
         except requests.exceptions.ReadTimeout:
             pass
         except KeyError: # PCARS is not running or Shared Memory is disabled
+            # TODO: Make it prettier, and use relative font size?
             screen.fill((0, 0, 0))
             screen.blit(pygame.font.SysFont(None, 28).render('Connection successful! Please run Project CARS with Shared Memory enabled.', True, (255, 255, 255)), (10, 10))
 
