@@ -1,4 +1,4 @@
-# TODO: Docstring every functions
+# TODO: Docstring every functions, unit test
 class NewFallback:
     """
     Fallback theme, if no matched theme found.
@@ -14,16 +14,15 @@ class NewFallback:
         'default_background': (0, 0, 0),
         'background_flash': (122, 0, 0)
     }
+    parameter_value = {
+        'hi_rpm_percentage': 0.95
+    }
     flashing_object = {
         'background': {
-            'condition': False,
             'visible': True,
             'counter': 0,
             'counter_max': 3
         }
-    }
-    parameter_value = {
-        'hi_rpm_percentage': 0.95
     }
 
     # These methods are needed and should be exist in every theme class:
@@ -47,14 +46,24 @@ class NewFallback:
                              self.theme_color['background_flash'])
 
     # Methods below are optional. I made these only for this theme.
-    def flashing_effect(self, object_name):
-        self.flashing_object[object_name]['counter'] += 1
-        if self.flashing_object[object_name]['counter'] >= self.flashing_object[object_name]['counter_max']:
+    def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
+        if condition and self.flashing_object[object_name]['visible']:
+            # Processing flashing effect
+            self.flashing_object[object_name]['counter'] += 1
+            if self.flashing_object[object_name]['counter'] >= self.flashing_object[object_name]['counter_max']:
+                self.flashing_object[object_name]['counter'] = 0
+                if self.flashing_object[object_name]['visible']:
+                    self.flashing_object[object_name]['visible'] = False
+                else:
+                    self.flashing_object[object_name]['visible'] = True
+
+            # Run function if condition true
+            function_if_cond_true()
+        else:
+            # Run function if condition false
+            function_if_cond_false()
             self.flashing_object[object_name]['counter'] = 0
-            if self.flashing_object[object_name]['visible']:
-                self.flashing_object[object_name]['visible'] = False
-            else:
-                self.flashing_object[object_name]['visible'] = True
+            self.flashing_object[object_name]['visible'] = True
 
     def print_text(self, text, font_size, color, position,
                    horizontal_align='left',
@@ -85,24 +94,22 @@ class NewFallback:
 
     def draw_background(self, rpm, max_rpm, hi_rpm_percentage, default_background_color, flash_background_color,
                         screen=None):
-        # TODO: Refactor this.
         if screen is None:
             screen = self.screen
 
         # Flashing condition
-        try:
-            self.flashing_object['background']['condition'] = (rpm / max_rpm) >= hi_rpm_percentage
-        except ZeroDivisionError:
-            self.flashing_object['background']['condition'] = False
+        def condition():
+            try:
+                return (rpm / max_rpm) >= hi_rpm_percentage
+            except ZeroDivisionError:
+                return False
 
         # Flash condition is met
-        if self.flashing_object['background']['condition'] and self.flashing_object['background']['visible']:
-            self.flashing_effect('background')  # Always called
+        def function_if_cond_true():
             screen.fill(flash_background_color)
 
         # No flashing
-        else:
+        def function_if_cond_false():
             screen.fill(default_background_color)
-            # Always called
-            self.flashing_object['background']['counter'] = 0
-            self.flashing_object['background']['visible'] = True
+
+        self.draw_flash('background', condition(), function_if_cond_true, function_if_cond_false)
