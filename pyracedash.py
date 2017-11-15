@@ -8,7 +8,7 @@ import json
 # TODO: Fix warnings and typos
 
 
-def main():
+def main(args):
     # Get configurations
     config = configparser.ConfigParser()
     config.read(os.path.dirname(os.path.realpath(__file__)) + '/conf.ini')
@@ -59,7 +59,7 @@ def main():
         # Get game data
         try:
             # If debug mode, use sample JSON
-            if len(sys.argv) > 1 and sys.argv[1] == 'debug':
+            if len(args) > 1 and 'debug' in args:
                 with open(os.path.dirname(os.path.realpath(__file__)) + '/crest2.json') as json_data:
                     theme.refresh(json.load(json_data))
             else:
@@ -80,5 +80,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
 
