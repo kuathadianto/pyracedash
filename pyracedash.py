@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 import configparser
 import os
 import pygame
 import requests
 import sys
 import json
+# TODO: Fix warnings and typos
 
 
 def main():
