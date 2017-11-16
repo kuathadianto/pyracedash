@@ -10,16 +10,27 @@ class NewFallback:
     needed_modules = ['carState', 'timings', 'eventInformation']
 
     # These attributes below are optional, and only meant to use for this theme only.
+    # All with None value are reserved, and initialized on __init__
     theme_color = {
         'default_background': (0, 0, 0),
         'background_flash': (122, 0, 0),
-        'gear': (255, 204, 0)
+        'gear': (255, 204, 0),
+        'rpm_circle_low': (0, 0, 255),
+        'rpm_circle_mid': (0, 255, 0),
+        'rpm_circle_hi': (255, 0, 0),
     }
     font_size = {
-        'gear': 380     # Default value for 480 height screen; re-initialized in init
+        'gear': None
     }
     parameter_value = {
-        'hi_rpm_percentage': 0.95
+        'hi_rpm_percentage': 0.95,
+        'rpm_percentage_list': [0.5, 0.6, 0.7, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.915, 0.93, 0.945],
+        'rpm_circle_radius': None,
+        'rpm_meter_range_per_circle': None
+    }
+    object_position = {
+        'screen_center': None,
+        'rpm_meter_y': None
     }
     flashing_object = {
         'background': {
@@ -39,8 +50,16 @@ class NewFallback:
         self.screen = screen
 
         # From here is optional
-        self.screen_center_position = (display_resolution[0] / 2, display_resolution[1] / 2)
-        self.font_size['gear'] = int(display_resolution[1] / 1.263157894736842)
+        if self.object_position['screen_center'] is None:
+            self.object_position['screen_center'] = (display_resolution[0] / 2, display_resolution[1] / 2)
+        if self.font_size['gear'] is None:
+            self.font_size['gear'] = int(display_resolution[1] / 1.263157894736842)
+        if self.parameter_value['rpm_circle_radius'] is None:
+            self.parameter_value['rpm_circle_radius'] = int(display_resolution[1] / 17.78)
+        if self.object_position['rpm_meter_y'] is None:
+            self.object_position['rpm_meter_y'] = self.object_position['screen_center'][1] / 6
+        if self.parameter_value['rpm_meter_range_per_circle'] is None:
+            self.parameter_value['rpm_meter_range_per_circle'] = int(display_resolution[0] / 66)
 
     def refresh(self, game_data):
         """
@@ -57,12 +76,16 @@ class NewFallback:
         self.print_gear(game_data['carState']['mGear'],
                         self.font_size['gear'],
                         self.theme_color['gear'],
-                        self.screen_center_position)
+                        self.object_position['screen_center'])
 
-        # TODO: Fix
         self.draw_rpm_meter(game_data['carState']['mRpm'] / game_data['carState']['mMaxRPM'],
-                            [0.5, 0.6, 0.7, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.915, 0.93, 0.945],
-                            20, 40, (0, 0, 255), (0, 255, 0), (255, 0, 0))
+                            self.parameter_value['rpm_percentage_list'],
+                            self.parameter_value['rpm_circle_radius'],
+                            self.object_position['rpm_meter_y'],
+                            self.parameter_value['rpm_meter_range_per_circle'],
+                            self.theme_color['rpm_circle_low'],
+                            self.theme_color['rpm_circle_mid'],
+                            self.theme_color['rpm_circle_hi'])
 
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
@@ -96,16 +119,16 @@ class NewFallback:
         text_object = self.pygame.font.SysFont(font, font_size).render(text, anti_aliasing, color)
 
         if horizontal_align == 'center':
-            x_offset = text_object.get_rect().width / 2
+            x_offset = text_object.get_width() / 2
         elif horizontal_align == 'right':
-            x_offset = text_object.get_rect().width
+            x_offset = text_object.get_width().width
         else:
             x_offset = 0
 
         if vertical_align == 'middle':
-            y_offset = text_object.get_rect().height / 2
+            y_offset = text_object.get_height() / 2
         elif vertical_align == 'bottom':
-            y_offset = text_object.get_rect().height
+            y_offset = text_object.get_height()
         else:
             y_offset = 0
 
@@ -161,21 +184,20 @@ class NewFallback:
                             anti_aliasing,
                             screen)
 
-    # TODO: Fix
-    def draw_rpm_meter(self, rpm_percentage, rpm_percentage_list, circle_size, y_pos,
+    def draw_rpm_meter(self, rpm_percentage, rpm_percentage_list, radius, pos_y, range_per_circle,
                        low_rpm_color, med_rpm_color, hi_rpm_color,
                        screen=None):
         if screen is None:
             screen = self.screen
 
-        range_every_circle = circle_size * 3.3  # 3.3 is hardcoded
-        total_x_rectangle_length = len(rpm_percentage_list) * circle_size \
-                                   + (len(rpm_percentage_list) - 1) * range_every_circle
-        circle_pos_x = self.screen_center_position[0] - (total_x_rectangle_length / 2)
+        sum_of_circles = len(rpm_percentage_list)
+        diameter = radius * 2
+        range_per_circle = diameter + range_per_circle
+        rpm_surface_x_length = sum_of_circles * diameter + (sum_of_circles - 1) * (range_per_circle - diameter)
+        rpm_surface = self.pygame.Surface((rpm_surface_x_length, diameter), self.pygame.SRCALPHA, 32)
+        pos_x = radius
 
-        i = 1
-
-        for p in rpm_percentage_list:
+        for i in range(0, len(rpm_percentage_list)):
             if i < len(rpm_percentage_list) / 3:
                 color = low_rpm_color
             elif i < len(rpm_percentage_list) * 2 / 3:
@@ -183,9 +205,10 @@ class NewFallback:
             else:
                 color = hi_rpm_color
 
-            if rpm_percentage >= p:
-                self.pygame.draw.circle(screen, color, (int(circle_pos_x), y_pos), circle_size)
-                i += 1
-                circle_pos_x += range_every_circle
+            if rpm_percentage >= rpm_percentage_list[i]:
+                self.pygame.draw.circle(rpm_surface, color, (pos_x, radius), radius)
+                pos_x += range_per_circle
             else:
                 break
+
+        screen.blit(rpm_surface, (self.object_position['screen_center'][0] - rpm_surface.get_width() / 2, pos_y))
