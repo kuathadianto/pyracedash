@@ -59,6 +59,11 @@ class NewFallback:
                         self.theme_color['gear'],
                         self.screen_center_position)
 
+        # TODO: Fix
+        self.draw_rpm_meter(game_data['carState']['mRpm'] / game_data['carState']['mMaxRPM'],
+                            [0.5, 0.6, 0.7, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.915, 0.93, 0.945],
+                            20, 40, (0, 0, 255), (0, 255, 0), (255, 0, 0))
+
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
         if condition and self.flashing_object[object_name]['visible']:
@@ -155,3 +160,32 @@ class NewFallback:
                             font,
                             anti_aliasing,
                             screen)
+
+    # TODO: Fix
+    def draw_rpm_meter(self, rpm_percentage, rpm_percentage_list, circle_size, y_pos,
+                       low_rpm_color, med_rpm_color, hi_rpm_color,
+                       screen=None):
+        if screen is None:
+            screen = self.screen
+
+        range_every_circle = circle_size * 3.3  # 3.3 is hardcoded
+        total_x_rectangle_length = len(rpm_percentage_list) * circle_size \
+                                   + (len(rpm_percentage_list) - 1) * range_every_circle
+        circle_pos_x = self.screen_center_position[0] - (total_x_rectangle_length / 2)
+
+        i = 1
+
+        for p in rpm_percentage_list:
+            if i < len(rpm_percentage_list) / 3:
+                color = low_rpm_color
+            elif i < len(rpm_percentage_list) * 2 / 3:
+                color = med_rpm_color
+            else:
+                color = hi_rpm_color
+
+            if rpm_percentage >= p:
+                self.pygame.draw.circle(screen, color, (int(circle_pos_x), y_pos), circle_size)
+                i += 1
+                circle_pos_x += range_every_circle
+            else:
+                break
