@@ -32,9 +32,9 @@ def main(args):
     # Get theme
     try:
         theme_name = config.get('global', 'THEME')
-        theme_class = getattr(__import__('themes.' + theme_name, fromlist=[theme_name]), theme_name)
+        theme_class = getattr(__import__('themes.' + theme_name + '.' + theme_name, fromlist=[theme_name]), theme_name)
     except (ModuleNotFoundError, configparser.NoOptionError):
-        theme_class = getattr(__import__('themes.Fallback', fromlist=['Fallback']), 'Fallback')
+        theme_class = getattr(__import__('themes.Fallback.Fallback', fromlist=['Fallback']), 'Fallback')
 
     theme = theme_class(pygame, screen, (int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))))
 

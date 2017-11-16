@@ -1,36 +1,49 @@
 # TODO: Docstring every functions
-class NewFallback:
+class Fallback:
     """
     Fallback theme, if no matched theme found.
     Or use this as template to make a new theme.
     The name of this class and this file should be the same and case sensitive.
     """
-
     # CREST Modules that this theme use
-    needed_modules = ['carState', 'timings', 'eventInformation']
+    needed_modules = ['carState', 'timings', 'eventInformation', 'participants', 'gameStates']
 
     # These attributes below are optional, and only meant to use for this theme only.
-    # All with None value are reserved, and initialized on __init__
+    # All with None value and screen_center are reserved, and initialized on __init__
+    config = None
     theme_color = {
+        'label': (255, 255, 255),
         'default_background': (0, 0, 0),
         'background_flash': (122, 0, 0),
         'gear': (255, 204, 0),
         'rpm_circle_low': (0, 0, 255),
         'rpm_circle_mid': (0, 255, 0),
         'rpm_circle_hi': (255, 0, 0),
+        'speed': (126, 41, 255),
+        'fuel': [
+            (0.5, (0, 0, 255)),
+            (0.3, (0, 255, 0)),
+            (0.15, (255, 255, 0)),
+            (0.1, (255, 127, 0)),
+            (0, (255, 0, 0))
+        ]
     }
     font_size = {
-        'gear': None
+        'gear': None,
+        'speed': None,
+        'fuel': None,
+        'label': None
     }
     parameter_value = {
         'hi_rpm_percentage': 0.95,
         'rpm_percentage_list': [0.5, 0.6, 0.7, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.915, 0.93, 0.945],
         'rpm_circle_radius': None,
-        'rpm_meter_range_per_circle': None
+        'rpm_meter_range_per_circle': None,
     }
     object_position = {
-        'screen_center': None,
-        'rpm_meter_y': None
+        'rpm_meter_y': None,
+        'screen_center': (0, 0),
+        'upper_label_y': None
     }
     flashing_object = {
         'background': {
@@ -50,8 +63,7 @@ class NewFallback:
         self.screen = screen
 
         # From here is optional
-        if self.object_position['screen_center'] is None:
-            self.object_position['screen_center'] = (display_resolution[0] / 2, display_resolution[1] / 2)
+        self.object_position['screen_center'] = (display_resolution[0] / 2, display_resolution[1] / 2)
         if self.font_size['gear'] is None:
             self.font_size['gear'] = int(display_resolution[1] / 1.263157894736842)
         if self.parameter_value['rpm_circle_radius'] is None:
@@ -60,6 +72,14 @@ class NewFallback:
             self.object_position['rpm_meter_y'] = self.object_position['screen_center'][1] / 6
         if self.parameter_value['rpm_meter_range_per_circle'] is None:
             self.parameter_value['rpm_meter_range_per_circle'] = int(display_resolution[0] / 66)
+        if self.font_size['speed'] is None:
+            self.font_size['speed'] = int(display_resolution[1] / 2.67)
+        if self.font_size['fuel'] is None:
+            self.font_size['fuel'] = int(display_resolution[1] / 3)
+        if self.font_size['label'] is None:
+            self.font_size['label'] = int(display_resolution[1] / 16)
+        if self.object_position['upper_label_y'] is None:
+            self.object_position['upper_label_y'] = int(display_resolution[1] / 48)
 
     def refresh(self, game_data):
         """
@@ -73,30 +93,65 @@ class NewFallback:
                              self.theme_color['default_background'],
                              self.theme_color['background_flash'])
 
-        self.print_gear(game_data['carState']['mGear'],
-                        self.font_size['gear'],
-                        self.theme_color['gear'],
-                        self.object_position['screen_center'])
+        gear_surface_rect = self.print_gear(game_data['carState']['mGear'],
+                                            self.font_size['gear'],
+                                            self.theme_color['gear'],
+                                            self.object_position['screen_center'])
 
-        self.draw_rpm_meter(game_data['carState']['mRpm'] / game_data['carState']['mMaxRPM'],
-                            self.parameter_value['rpm_percentage_list'],
-                            self.parameter_value['rpm_circle_radius'],
-                            self.object_position['rpm_meter_y'],
-                            self.parameter_value['rpm_meter_range_per_circle'],
-                            self.theme_color['rpm_circle_low'],
-                            self.theme_color['rpm_circle_mid'],
-                            self.theme_color['rpm_circle_hi'])
+        try:
+            rpm = game_data['carState']['mRpm'] / game_data['carState']['mMaxRPM']
+        except ZeroDivisionError:
+            rpm = 0
+        rpm_meter_surface_rect = self.draw_rpm_meter(rpm,
+                                                     self.parameter_value['rpm_percentage_list'],
+                                                     self.parameter_value['rpm_circle_radius'],
+                                                     self.object_position['rpm_meter_y'],
+                                                     self.parameter_value['rpm_meter_range_per_circle'],
+                                                     self.theme_color['rpm_circle_low'],
+                                                     self.theme_color['rpm_circle_mid'],
+                                                     self.theme_color['rpm_circle_hi'])
 
-        # TODO: Finish
-        font_size = 180
-        color = (126, 41, 255)
-        pos = (self.display_resolution[0] - 24, self.object_position['screen_center'][1])
+        # x edge of RPM meter
+        x_edge_rpm = int(self.display_resolution[0] - rpm_meter_surface_rect.width) / 2
+
         self.print_speed(game_data['carState']['mSpeed'],
-                         font_size,
-                         color,
-                         pos,
+                         self.font_size['speed'],
+                         self.theme_color['speed'],
+                         (self.display_resolution[0] - x_edge_rpm, self.object_position['screen_center'][1]),
                          'right',
                          'middle')
+
+        self.print_fuel(game_data['carState']['mFuelLevel'], game_data['carState']['mFuelCapacity'],
+                        self.font_size['fuel'],
+                        self.theme_color['fuel'],
+                        (x_edge_rpm, self.object_position['screen_center'][1] - (gear_surface_rect.height / 2)),
+                        horizontal_align='left',
+                        vertical_align='top')
+
+        if game_data['participants']['mNumParticipants'] != -1:
+            # Driver name
+            self.print_text(game_data['participants']['mParticipantInfo'][0]['mName'],
+                            self.font_size['label'], self.theme_color['label'],
+                            (self.display_resolution[0] - x_edge_rpm, self.object_position['upper_label_y']),
+                            horizontal_align='right', vertical_align='top')
+
+            if game_data['gameStates']['mSessionState'] != 0:
+                # Lap or remaining time
+                if game_data['timings']['mEventTimeRemaining'] == -1:   # Indeed lap race
+                    lap = str(game_data['participants']['mParticipantInfo'][0]['mCurrentLap'])
+                    total_laps = str(game_data['eventInformation']['mLapsInEvent'])
+                    self.print_text('LAP: ' + lap + '/' + total_laps, self.font_size['label'],
+                                    self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']))
+                else:   # Time race
+                    self.print_text('TIME: ' + self.float_to_time(game_data['timings']['mEventTimeRemaining']),
+                                    self.font_size['label'], self.theme_color['label'],
+                                    (x_edge_rpm, self.object_position['upper_label_y']))
+                # Position
+                self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][0]['mRacePosition']) + '/'
+                                + str(game_data['participants']['mNumParticipants']),
+                                self.font_size['label'], self.theme_color['label'],
+                                (self.object_position['screen_center'][0], self.object_position['upper_label_y']),
+                                horizontal_align='center')
 
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
@@ -144,6 +199,7 @@ class NewFallback:
             y_offset = 0
 
         screen.blit(text_object, (position[0] - x_offset, position[1] - y_offset))
+        return text_object.get_rect()
 
     def draw_background(self, rpm, max_rpm, hi_rpm_percentage, default_background_color, flash_background_color,
                         screen=None):
@@ -179,12 +235,12 @@ class NewFallback:
             text = 'R'
         else:
             text = str(gear)
-        self.print_text(text, font_size, color, position,
-                        horizontal_align,
-                        vertical_align,
-                        font,
-                        anti_aliasing,
-                        screen)
+        return self.print_text(text, font_size, color, position,
+                               horizontal_align,
+                               vertical_align,
+                               font,
+                               anti_aliasing,
+                               screen)
 
     def draw_rpm_meter(self, rpm_percentage, rpm_percentage_list, radius, pos_y, range_per_circle,
                        low_rpm_color, med_rpm_color, hi_rpm_color,
@@ -214,16 +270,55 @@ class NewFallback:
                 break
 
         screen.blit(rpm_surface, (self.object_position['screen_center'][0] - rpm_surface.get_width() / 2, pos_y))
+        return rpm_surface.get_rect()
 
     def print_speed(self, speed_in_mps, font_size, color, position,
+                    horizontal_align='left',
+                    vertical_align='top',
+                    font=None,
+                    anti_aliasing=True,
+                    screen=None):
+        return self.print_text(str(int(speed_in_mps * 3.6)), font_size, color, position,
+                               horizontal_align,
+                               vertical_align,
+                               font,
+                               anti_aliasing,
+                               screen)
+
+    def print_fuel(self, fuel_current, fuel_capacity, font_size, list_of_fuel_tuple_colors, position,
                    horizontal_align='left',
                    vertical_align='top',
                    font=None,
                    anti_aliasing=True,
                    screen=None):
-        self.print_text(str(int(speed_in_mps * 3.6)), font_size, color, position,
-                        horizontal_align,
-                        vertical_align,
-                        font,
-                        anti_aliasing,
-                        screen)
+        if screen is None:
+            screen = self.screen
+
+        c = None
+
+        for i in range(0, len(list_of_fuel_tuple_colors)):
+            if fuel_current >= list_of_fuel_tuple_colors[i][0]:
+                c = list_of_fuel_tuple_colors[i][1]
+                break
+
+        if c is None:
+            c = list_of_fuel_tuple_colors[-1][1]
+
+        return self.print_text(str("%.1f" % (fuel_current * fuel_capacity)), font_size, c, position,
+                               horizontal_align,
+                               vertical_align,
+                               font,
+                               anti_aliasing,
+                               screen)
+
+    def float_to_time(self, time_in_float, sec_only=False):
+        minutes, seconds = divmod(time_in_float, 60)
+        if sec_only and seconds < 100:
+            extra_zero = '00'
+        elif seconds < 10:
+            extra_zero = '0'
+        else:
+            extra_zero = ''
+        if sec_only:
+            return str(extra_zero + str("%.3f" % seconds))
+        return str(int(minutes)) + ':' + extra_zero + str("%.3f" % seconds)

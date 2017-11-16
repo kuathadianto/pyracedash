@@ -1,5 +1,5 @@
 # TODO: Rebuild this! Make it super tidy!
-class Fallback:
+class OldFallback:
     '''Fallback template, if no matched template found.'''
 
     needed_modules = ['carState', 'timings', 'eventInformation']
