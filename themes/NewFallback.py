@@ -87,6 +87,17 @@ class NewFallback:
                             self.theme_color['rpm_circle_mid'],
                             self.theme_color['rpm_circle_hi'])
 
+        # TODO: Finish
+        font_size = 180
+        color = (126, 41, 255)
+        pos = (self.display_resolution[0] - 24, self.object_position['screen_center'][1])
+        self.print_speed(game_data['carState']['mSpeed'],
+                         font_size,
+                         color,
+                         pos,
+                         'right',
+                         'middle')
+
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
         if condition and self.flashing_object[object_name]['visible']:
@@ -121,7 +132,7 @@ class NewFallback:
         if horizontal_align == 'center':
             x_offset = text_object.get_width() / 2
         elif horizontal_align == 'right':
-            x_offset = text_object.get_width().width
+            x_offset = text_object.get_width()
         else:
             x_offset = 0
 
@@ -163,26 +174,17 @@ class NewFallback:
                    anti_aliasing=True,
                    screen=None):
         if gear == 0:
-            self.print_text('N', font_size, color, position,
-                            horizontal_align,
-                            vertical_align,
-                            font,
-                            anti_aliasing,
-                            screen)
+            text = 'N'
         elif gear == -1:
-            self.print_text('R', font_size, color, position,
-                            horizontal_align,
-                            vertical_align,
-                            font,
-                            anti_aliasing,
-                            screen)
+            text = 'R'
         else:
-            self.print_text(str(gear), font_size, color, position,
-                            horizontal_align,
-                            vertical_align,
-                            font,
-                            anti_aliasing,
-                            screen)
+            text = str(gear)
+        self.print_text(text, font_size, color, position,
+                        horizontal_align,
+                        vertical_align,
+                        font,
+                        anti_aliasing,
+                        screen)
 
     def draw_rpm_meter(self, rpm_percentage, rpm_percentage_list, radius, pos_y, range_per_circle,
                        low_rpm_color, med_rpm_color, hi_rpm_color,
@@ -212,3 +214,16 @@ class NewFallback:
                 break
 
         screen.blit(rpm_surface, (self.object_position['screen_center'][0] - rpm_surface.get_width() / 2, pos_y))
+
+    def print_speed(self, speed_in_mps, font_size, color, position,
+                   horizontal_align='left',
+                   vertical_align='top',
+                   font=None,
+                   anti_aliasing=True,
+                   screen=None):
+        self.print_text(str(int(speed_in_mps * 3.6)), font_size, color, position,
+                        horizontal_align,
+                        vertical_align,
+                        font,
+                        anti_aliasing,
+                        screen)
