@@ -1,4 +1,4 @@
-# TODO: Docstring every functions, unit test
+# TODO: Docstring every functions
 class NewFallback:
     """
     Fallback theme, if no matched theme found.
@@ -12,7 +12,11 @@ class NewFallback:
     # These attributes below are optional, and only meant to use for this theme only.
     theme_color = {
         'default_background': (0, 0, 0),
-        'background_flash': (122, 0, 0)
+        'background_flash': (122, 0, 0),
+        'gear': (255, 204, 0)
+    }
+    font_size = {
+        'gear': 380     # Default value for 480 height screen; re-initialized in init
     }
     parameter_value = {
         'hi_rpm_percentage': 0.95
@@ -29,9 +33,14 @@ class NewFallback:
     # __init__(self, pygame, screen, display_resolution)
     # refresh(self, json_from_request)
     def __init__(self, pygame, screen, display_resolution):
+        # These 3 initialization are required
         self.pygame = pygame
         self.display_resolution = display_resolution
         self.screen = screen
+
+        # From here is optional
+        self.screen_center_position = (display_resolution[0] / 2, display_resolution[1] / 2)
+        self.font_size['gear'] = int(display_resolution[1] / 1.263157894736842)
 
     def refresh(self, game_data):
         """
@@ -44,6 +53,11 @@ class NewFallback:
                              self.parameter_value['hi_rpm_percentage'],
                              self.theme_color['default_background'],
                              self.theme_color['background_flash'])
+
+        self.print_gear(game_data['carState']['mGear'],
+                        self.font_size['gear'],
+                        self.theme_color['gear'],
+                        self.screen_center_position)
 
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
@@ -86,7 +100,7 @@ class NewFallback:
         if vertical_align == 'middle':
             y_offset = text_object.get_rect().height / 2
         elif vertical_align == 'bottom':
-            y_offset = text.object.get_rect().height
+            y_offset = text_object.get_rect().height
         else:
             y_offset = 0
 
@@ -113,3 +127,31 @@ class NewFallback:
             screen.fill(default_background_color)
 
         self.draw_flash('background', condition(), function_if_cond_true, function_if_cond_false)
+
+    def print_gear(self, gear, font_size, color, position,
+                   horizontal_align='center',
+                   vertical_align='middle',
+                   font=None,
+                   anti_aliasing=True,
+                   screen=None):
+        if gear == 0:
+            self.print_text('N', font_size, color, position,
+                            horizontal_align,
+                            vertical_align,
+                            font,
+                            anti_aliasing,
+                            screen)
+        elif gear == -1:
+            self.print_text('R', font_size, color, position,
+                            horizontal_align,
+                            vertical_align,
+                            font,
+                            anti_aliasing,
+                            screen)
+        else:
+            self.print_text(str(gear), font_size, color, position,
+                            horizontal_align,
+                            vertical_align,
+                            font,
+                            anti_aliasing,
+                            screen)

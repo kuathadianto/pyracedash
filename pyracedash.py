@@ -5,7 +5,6 @@ import pygame
 import requests
 import sys
 import json
-# TODO: Fix warnings and typos
 
 
 def main(args):
@@ -23,7 +22,9 @@ def main(args):
     else:
         fullscreen = 0
 
-    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')), int(config.get('global', 'Y_RES'))), fullscreen)
+    screen = pygame.display.set_mode((int(config.get('global', 'X_RES')),
+                                      int(config.get('global', 'Y_RES'))),
+                                     fullscreen)
 
     # Set window caption
     pygame.display.set_caption(config.get('global', 'TITLE'))
@@ -44,8 +45,8 @@ def main(args):
     url += '/v1/api'
     if len(theme.needed_modules) > 0:
         url += '?'
-        for module in theme.needed_modules:
-            url += module + '=true&'
+        for mod in theme.needed_modules:
+            url += mod + '=true&'
 
     # Game loop
     while True:
@@ -58,22 +59,32 @@ def main(args):
 
         # Get game data
         try:
-            # If debug mode, use sample JSON
-            if len(args) > 1 and 'debug' in args:
+            # If debug mode...
+            if len(args) > 1 and args[1] == 'debug':
                 with open(os.path.dirname(os.path.realpath(__file__)) + '/crest2.json') as json_data:
                     theme.refresh(json.load(json_data))
             else:
                 theme.refresh(requests.get(url, timeout=0.1).json())
-        except requests.exceptions.ConnectionError: # Cannot connect to host
+        except requests.exceptions.ConnectionError:
+            # Cannot connect to host
             # TODO: Make it prettier, and use relative font size?
             screen.fill((0, 0, 0))
-            screen.blit(pygame.font.SysFont(None, 32).render('Connection error! Is Host IP address correct? Is CREST running?', True, (255, 255, 255)), (10, 10))
+            screen.blit(pygame.font.SysFont(None, 32).render(
+                'Connection error! Is Host IP address correct? Is CREST running?',
+                True,
+                (255, 255, 255)),
+                (10, 10))
         except requests.exceptions.ReadTimeout:
             pass
-        except KeyError: # PCARS is not running or Shared Memory is disabled
+        except KeyError:
+            # PCARS is not running or Shared Memory is disabled
             # TODO: Make it prettier, and use relative font size?
             screen.fill((0, 0, 0))
-            screen.blit(pygame.font.SysFont(None, 28).render('Connection successful! Please run Project CARS with Shared Memory enabled.', True, (255, 255, 255)), (10, 10))
+            screen.blit(pygame.font.SysFont(None, 28).render(
+                'Connection successful! Please run Project CARS with Shared Memory enabled.',
+                True,
+                (255, 255, 255)),
+                (10, 10))
 
         pygame.display.update()
         clock.tick(int(config.get('global', 'FPS')))
@@ -81,4 +92,3 @@ def main(args):
 
 if __name__ == '__main__':
     main(sys.argv)
-
