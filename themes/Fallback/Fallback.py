@@ -26,7 +26,8 @@ class Fallback:
             (0.15, (255, 255, 0)),
             (0.1, (255, 127, 0)),
             (0, (255, 0, 0))
-        ]
+        ],
+        'fuel_last_lap': (26, 206, 137)
     }
     font_size = {
         'gear': None,
@@ -50,6 +51,11 @@ class Fallback:
             'visible': True,
             'counter': 0,
             'counter_max': 3
+        },
+        'fuel_warning': {
+            'visible': True,
+            'counter': 0,
+            'counter_max': 30
         }
     }
 
@@ -114,20 +120,20 @@ class Fallback:
         # x edge of RPM meter
         x_edge_rpm = int(self.display_resolution[0] - rpm_meter_surface_rect.width) / 2
 
-        self.print_speed(game_data['carState']['mSpeed'],
-                         self.font_size['speed'],
-                         self.theme_color['speed'],
-                         (self.display_resolution[0] - x_edge_rpm, self.object_position['screen_center'][1]),
-                         'right',
-                         'middle')
+        speed_surface_rect = self.print_speed(game_data['carState']['mSpeed'],
+                                              self.font_size['speed'],
+                                              self.theme_color['speed'],
+                                              (self.display_resolution[0] - x_edge_rpm,
+                                               self.object_position['screen_center'][1]),
+                                              'right', 'middle')
 
-        self.print_fuel(game_data['carState']['mFuelLevel'], game_data['carState']['mFuelCapacity'],
-                        self.font_size['fuel'],
-                        self.theme_color['fuel'],
-                        (x_edge_rpm, self.object_position['screen_center'][1] - (gear_surface_rect.height / 2)),
-                        horizontal_align='left',
-                        vertical_align='top')
+        fuel_surface_rect = self.print_fuel(game_data['carState']['mFuelLevel'], game_data['carState']['mFuelCapacity'],
+                                            self.font_size['fuel'],
+                                            self.theme_color['fuel'],
+                                            (x_edge_rpm, self.object_position['screen_center'][1]
+                                             - (gear_surface_rect.height / 2)))
 
+        # On game only calculations
         if game_data['participants']['mNumParticipants'] != -1:
             # Driver name
             self.print_text(game_data['participants']['mParticipantInfo'][0]['mName'],
@@ -135,23 +141,67 @@ class Fallback:
                             (self.display_resolution[0] - x_edge_rpm, self.object_position['upper_label_y']),
                             horizontal_align='right', vertical_align='top')
 
-            if game_data['gameStates']['mSessionState'] != 0:
-                # Lap or remaining time
-                if game_data['timings']['mEventTimeRemaining'] == -1:   # Indeed lap race
-                    lap = str(game_data['participants']['mParticipantInfo'][0]['mCurrentLap'])
-                    total_laps = str(game_data['eventInformation']['mLapsInEvent'])
-                    self.print_text('LAP: ' + lap + '/' + total_laps, self.font_size['label'],
-                                    self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']))
-                else:   # Time race
-                    self.print_text('TIME: ' + self.float_to_time(game_data['timings']['mEventTimeRemaining']),
-                                    self.font_size['label'], self.theme_color['label'],
-                                    (x_edge_rpm, self.object_position['upper_label_y']))
-                # Position
-                self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][0]['mRacePosition']) + '/'
-                                + str(game_data['participants']['mNumParticipants']),
+            # Lap or remaining time
+            if game_data['timings']['mEventTimeRemaining'] == -1:   # Indeed lap race
+                lap = str(game_data['participants']['mParticipantInfo'][0]['mCurrentLap'])
+                total_laps = str(game_data['eventInformation']['mLapsInEvent'])
+                self.print_text('LAP: ' + lap + '/' + total_laps, self.font_size['label'],
+                                self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']))
+            else:   # Time race
+                self.print_text('TIME: ' + self.float_to_time(game_data['timings']['mEventTimeRemaining']),
                                 self.font_size['label'], self.theme_color['label'],
-                                (self.object_position['screen_center'][0], self.object_position['upper_label_y']),
-                                horizontal_align='center')
+                                (x_edge_rpm, self.object_position['upper_label_y']))
+            # Position
+            self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][0]['mRacePosition']) + '/'
+                            + str(game_data['participants']['mNumParticipants']),
+                            self.font_size['label'], self.theme_color['label'],
+                            (self.object_position['screen_center'][0], self.object_position['upper_label_y']),
+                            horizontal_align='center')
+
+            # Fuel last lap
+            if game_data['timings']['mCurrentTime'] < 2 and game_data['timings']['mLastLapTime'] == -1:
+                self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
+                self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
+                self.IN_GAME_LAST_FUEL_USAGE = 0
+                self.IN_GAME_FUEL_WARNING = False
+            elif game_data['timings']['mLastLapTime'] != self.IN_GAME_LAST_LAP_TIME:
+                self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
+                self.IN_GAME_LAST_FUEL_USAGE = self.IN_GAME_CURRENT_FUEL - game_data['carState']['mFuelLevel']
+                self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
+                # Not enough fuel warning
+                if self.IN_GAME_LAST_FUEL_USAGE \
+                        * (game_data['eventInformation']['mLapsInEvent']
+                               - game_data['participants']['mParticipantInfo'][0]['mLapsCompleted']) \
+                        > game_data['carState']['mFuelLevel']:
+                    self.IN_GAME_FUEL_WARNING = True
+                else:
+                    self.IN_GAME_FUEL_WARNING = False
+
+            self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
+                            self.font_size['fuel'],
+                            [(0, self.theme_color['fuel_last_lap'])],
+                            (x_edge_rpm, self.object_position['screen_center'][1]
+                             + gear_surface_rect.width / 2),
+                            'left', 'bottom')
+
+            # Last lap fuel label
+            self.print_text('Last Fuel Usage', self.font_size['label'], self.theme_color['label'],
+                            (x_edge_rpm, self.object_position['screen_center'][1]
+                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6),
+                            'left', 'bottom')
+
+            self.print_fuel_warning(self.IN_GAME_FUEL_WARNING and game_data['gameStates']['mSessionState'] == 5)
+
+        # Fuel label
+        self.print_text('Fuel', self.font_size['label'], self.theme_color['label'],
+                        (x_edge_rpm, self.object_position['screen_center'][1]
+                         - (gear_surface_rect.height / 2) + fuel_surface_rect.height - self.font_size['fuel'] / 10))
+
+        # Speed label
+        self.print_text('Speed', self.font_size['label'], self.theme_color['label'],
+                        (self.display_resolution[0] - x_edge_rpm,
+                         self.object_position['screen_center'][1] - speed_surface_rect.height / 2 +
+                         self.font_size['speed'] / 18), 'right', 'bottom')
 
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
@@ -222,6 +272,20 @@ class Fallback:
             screen.fill(default_background_color)
 
         self.draw_flash('background', condition(), function_if_cond_true, function_if_cond_false)
+
+    def print_fuel_warning(self, cond, screen=None):
+        if screen is None:
+            screen = self.screen
+
+        # Flash condition is met
+        def function_if_cond_true():
+            self.print_text('FUEL', 80, (255, 255, 255), (0, self.display_resolution[1]), vertical_align='bottom')
+
+        # No flashing
+        def function_if_cond_false():
+            pass
+
+        self.draw_flash('fuel_warning', cond, function_if_cond_true, function_if_cond_false)
 
     def print_gear(self, gear, font_size, color, position,
                    horizontal_align='center',
