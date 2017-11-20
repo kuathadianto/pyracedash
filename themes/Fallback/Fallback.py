@@ -27,13 +27,16 @@ class Fallback:
             (0.1, (255, 127, 0)),
             (0, (255, 0, 0))
         ],
-        'fuel_last_lap': (26, 206, 137)
+        'fuel_last_lap': (26, 206, 137),
+        'time': (198, 136, 35)
     }
     font_size = {
         'gear': None,
         'speed': None,
         'fuel': None,
-        'label': None
+        'label': None,
+        'fuel_warning_text': None,
+        'time': None
     }
     parameter_value = {
         'hi_rpm_percentage': 0.95,
@@ -50,7 +53,7 @@ class Fallback:
         'background': {
             'visible': True,
             'counter': 0,
-            'counter_max': 3
+            'counter_max': 4
         },
         'fuel_warning': {
             'visible': True,
@@ -86,6 +89,10 @@ class Fallback:
             self.font_size['label'] = int(display_resolution[1] / 16)
         if self.object_position['upper_label_y'] is None:
             self.object_position['upper_label_y'] = int(display_resolution[1] / 48)
+        if self.font_size['fuel_warning_text'] is None:
+            self.font_size['fuel_warning_text'] = int(self.display_resolution[1] / 6)
+        if self.font_size['time'] is None:
+            self.font_size['time'] = int(self.display_resolution[1] / 6.857142857142857)
 
     def refresh(self, game_data):
         """
@@ -159,7 +166,7 @@ class Fallback:
                             horizontal_align='center')
 
             # Fuel last lap
-            if game_data['timings']['mCurrentTime'] < 2 and game_data['timings']['mLastLapTime'] == -1:
+            if game_data['timings']['mCurrentTime'] == -1 and game_data['timings']['mLastLapTime'] == -1:
                 self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
                 self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
                 self.IN_GAME_LAST_FUEL_USAGE = 0
@@ -180,17 +187,17 @@ class Fallback:
             self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
                             self.font_size['fuel'],
                             [(0, self.theme_color['fuel_last_lap'])],
-                            (x_edge_rpm, self.object_position['screen_center'][1]
-                             + gear_surface_rect.width / 2),
-                            'left', 'bottom')
+                            (x_edge_rpm, self.object_position['screen_center'][1]))
 
             # Last lap fuel label
             self.print_text('Last Fuel Usage', self.font_size['label'], self.theme_color['label'],
                             (x_edge_rpm, self.object_position['screen_center'][1]
-                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6),
-                            'left', 'bottom')
+                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6))
 
-            self.print_fuel_warning(self.IN_GAME_FUEL_WARNING and game_data['gameStates']['mSessionState'] == 5)
+            fwc = self.IN_GAME_FUEL_WARNING and game_data['gameStates']['mSessionState'] == 5
+            self.print_fuel_warning(fwc, self.font_size['fuel_warning_text'],
+                                    self.theme_color['gear'], (x_edge_rpm, self.display_resolution[1]),
+                                    vertical_align='bottom')
 
         # Fuel label
         self.print_text('Fuel', self.font_size['label'], self.theme_color['label'],
@@ -203,9 +210,40 @@ class Fallback:
                          self.object_position['screen_center'][1] - speed_surface_rect.height / 2 +
                          self.font_size['speed'] / 18), 'right', 'bottom')
 
+        # Current lap time
+        if game_data['timings']['mCurrentTime'] == -1:
+            text = 'n/a'
+        else:
+            text = self.float_to_time(game_data['timings']['mCurrentTime'])
+        lt_surface_rect = self.print_text(text, self.font_size['time'],
+                                          self.theme_color['time'],
+                                          (self.display_resolution[0] - x_edge_rpm, self.display_resolution[1]), 'right', 'bottom')
+
+        # Lap time label
+        y_lap_time_label = self.display_resolution[1] - lt_surface_rect.height
+        ltl_surface_rect = self.print_text('Lap Time', self.font_size['label'], self.theme_color['label'],
+                                           (self.display_resolution[0] - x_edge_rpm, y_lap_time_label),
+                                           'right', 'bottom')
+
+        # Last lap time
+        if game_data['timings']['mLastLapTime'] == -1:
+            text = 'n/a'
+        else:
+            text = self.float_to_time(game_data['timings']['mLastLapTime'])
+        y_llt = y_lap_time_label - ltl_surface_rect.height
+        llt_surface_rect = self.print_text(text, self.font_size['time'],
+                                          self.theme_color['time'],
+                                          (self.display_resolution[0] - x_edge_rpm, y_llt),
+                                           'right', 'bottom')
+
+        # Last lap label
+        self.print_text('Last Lap', self.font_size['label'], self.theme_color['label'],
+                        (self.display_resolution[0] - x_edge_rpm, y_llt - llt_surface_rect.height),
+                        'right', 'bottom')
+
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
-        if condition and self.flashing_object[object_name]['visible']:
+        if condition:
             # Processing flashing effect
             self.flashing_object[object_name]['counter'] += 1
             if self.flashing_object[object_name]['counter'] >= self.flashing_object[object_name]['counter_max']:
@@ -216,7 +254,10 @@ class Fallback:
                     self.flashing_object[object_name]['visible'] = True
 
             # Run function if condition true
-            function_if_cond_true()
+            if self.flashing_object[object_name]['visible']:
+                function_if_cond_true()
+            else:
+                function_if_cond_false()
         else:
             # Run function if condition false
             function_if_cond_false()
@@ -273,13 +314,15 @@ class Fallback:
 
         self.draw_flash('background', condition(), function_if_cond_true, function_if_cond_false)
 
-    def print_fuel_warning(self, cond, screen=None):
+    def print_fuel_warning(self, cond, font_size, color, pos, horizontal_align='left', vertical_align='top', font=None,
+                           anti_aliasing=True, screen=None):
         if screen is None:
             screen = self.screen
 
         # Flash condition is met
         def function_if_cond_true():
-            self.print_text('FUEL', 80, (255, 255, 255), (0, self.display_resolution[1]), vertical_align='bottom')
+            self.print_text('FUEL', font_size, color, pos,
+                            horizontal_align, vertical_align, font, anti_aliasing, screen)
 
         # No flashing
         def function_if_cond_false():
