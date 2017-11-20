@@ -1,4 +1,3 @@
-# TODO: Docstring every functions
 class Fallback:
     """
     Fallback theme, if no matched theme found.
@@ -28,7 +27,10 @@ class Fallback:
             (0, (255, 0, 0))
         ],
         'fuel_last_lap': (26, 206, 137),
-        'time': (198, 136, 35)
+        'time': (198, 136, 35),
+        'rpm': (102, 252, 255),
+        'time_ahead': (255, 0, 0),
+        'time_behind': (0, 240, 32)
     }
     font_size = {
         'gear': None,
@@ -53,12 +55,12 @@ class Fallback:
         'background': {
             'visible': True,
             'counter': 0,
-            'counter_max': 4
+            'counter_max': 3
         },
         'fuel_warning': {
             'visible': True,
             'counter': 0,
-            'counter_max': 30
+            'counter_max': 20
         }
     }
 
@@ -241,6 +243,39 @@ class Fallback:
                         (self.display_resolution[0] - x_edge_rpm, y_llt - llt_surface_rect.height),
                         'right', 'bottom')
 
+        # RPM
+        self.print_text(str(int(game_data['carState']['mRpm'])), self.font_size['label'], self.theme_color['rpm'],
+                        (self.object_position['screen_center'][0],
+                         self.object_position['screen_center'][1] - gear_surface_rect.height / 2), 'center', 'top')
+
+        # Time Behind
+        if game_data['timings']['mSplitTimeBehind'] == -1:
+            text = '+ -.---'
+        else:
+            text = '+ ' + self.float_to_time(game_data['timings']['mSplitTimeBehind'], True)
+        tb_surface_rect = self.print_text(text, self.font_size['time'], self.theme_color['time_behind'],
+                                          (self.object_position['screen_center'][0], self.display_resolution[1]),
+                                          'center', 'bottom')
+
+        # Time Behind Label
+        y_tbl = self.display_resolution[1] - tb_surface_rect.height
+        tbl_surface_rect = self.print_text('Split Time Behind', self.font_size['label'], self.theme_color['label'],
+                                           (self.object_position['screen_center'][0], y_tbl), 'center', 'bottom')
+
+        # Time Ahead
+        if game_data['timings']['mSplitTimeAhead'] == -1:
+            text = '- -.---'
+        else:
+            text = '- ' + self.float_to_time(game_data['timings']['mSplitTimeAhead'], True)
+        y_ta = y_tbl - tbl_surface_rect.height
+        ta_surface_rect = self.print_text(text, self.font_size['time'], self.theme_color['time_ahead'],
+                                          (self.object_position['screen_center'][0], y_ta),
+                                          'center', 'bottom')
+
+        # Time Ahead Label
+        self.print_text('Split Time Ahead', self.font_size['label'], self.theme_color['label'],
+                        (self.object_position['screen_center'][0], y_ta - ta_surface_rect.height), 'center', 'bottom')
+
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
         if condition:
@@ -420,9 +455,7 @@ class Fallback:
 
     def float_to_time(self, time_in_float, sec_only=False):
         minutes, seconds = divmod(time_in_float, 60)
-        if sec_only and seconds < 100:
-            extra_zero = '00'
-        elif seconds < 10:
+        if not sec_only and seconds < 10:
             extra_zero = '0'
         else:
             extra_zero = ''
