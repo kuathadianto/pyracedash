@@ -13,7 +13,12 @@ The host computer and the computer that runs __pyracedash__ should be connected 
 ### Install on a Raspberry Pi
 _TODO_
 ### Running on a PC/laptop
-_TODO_
+1. Install Python. You can download it [here](https://www.python.org/). Check "Add Python to PATH" on installation. Reboot after install. ![Add PATH on installation](https://loadbalancerblog.com/sites/default/files/images/image003.jpg)
+2. Download [__pyracedash__](https://github.com/kuathadianto/pyracedash/archive/master.zip), unzip it.
+3. Open Terminal/Command Prompt, change directory to the unzipped __pyracedash__ folder.
+4. Run this command: `pip install -r requirements.txt`
+5. Configure __pyracedash__ (see Configuration section).
+6. Run it (double-click __pyracedash.py__)!
 
 ## Configuration
 To configure __pyracedash__, you can open and edit __conf.ini__ located along with __pyracedash.py__. This is the sample of __conf.ini__:
