@@ -47,4 +47,4 @@ PORT = 8080
 ## Help
 For more info, questions, suggestions or feature requests, please contact me via twitter at: [@kuathadianto](https://twitter.com/kuathadianto)
 
-Enjoy! :)
+Enjoy! :smile:
