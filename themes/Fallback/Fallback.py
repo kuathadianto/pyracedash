@@ -10,6 +10,7 @@ class Fallback:
     # These attributes below are optional, and only meant to use for this theme only.
     # All with None value and screen_center are reserved, and initialized on __init__
     config = None
+    global_font_name = None
     theme_color = {
         'label': (255, 255, 255),
         'default_background': (0, 0, 0),
@@ -111,7 +112,8 @@ class Fallback:
         gear_surface_rect = self.print_gear(game_data['carState']['mGear'],
                                             self.font_size['gear'],
                                             self.theme_color['gear'],
-                                            self.object_position['screen_center'])
+                                            self.object_position['screen_center'],
+                                            font=self.global_font_name)
 
         try:
             rpm = game_data['carState']['mRpm'] / game_data['carState']['mMaxRPM']
@@ -134,13 +136,14 @@ class Fallback:
                                               self.theme_color['speed'],
                                               (self.display_resolution[0] - x_edge_rpm,
                                                self.object_position['screen_center'][1]),
-                                              'right', 'middle')
+                                              'right', 'middle', font=self.global_font_name)
 
         fuel_surface_rect = self.print_fuel(game_data['carState']['mFuelLevel'], game_data['carState']['mFuelCapacity'],
                                             self.font_size['fuel'],
                                             self.theme_color['fuel'],
                                             (x_edge_rpm, self.object_position['screen_center'][1]
-                                             - (gear_surface_rect.height / 2)))
+                                             - (gear_surface_rect.height / 2)),
+                                            font=self.global_font_name)
 
         # On game only calculations
         if game_data['participants']['mNumParticipants'] != -1:
@@ -148,24 +151,26 @@ class Fallback:
             self.print_text(game_data['participants']['mParticipantInfo'][0]['mName'],
                             self.font_size['label'], self.theme_color['label'],
                             (self.display_resolution[0] - x_edge_rpm, self.object_position['upper_label_y']),
-                            horizontal_align='right', vertical_align='top')
+                            horizontal_align='right', vertical_align='top', font=self.global_font_name)
 
             # Lap or remaining time
             if game_data['timings']['mEventTimeRemaining'] == -1:   # Indeed lap race
                 lap = str(game_data['participants']['mParticipantInfo'][0]['mCurrentLap'])
                 total_laps = str(game_data['eventInformation']['mLapsInEvent'])
                 self.print_text('LAP: ' + lap + '/' + total_laps, self.font_size['label'],
-                                self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']))
+                                self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']),
+                                font=self.global_font_name)
             else:   # Time race
                 self.print_text('TIME: ' + self.float_to_time(game_data['timings']['mEventTimeRemaining']),
                                 self.font_size['label'], self.theme_color['label'],
-                                (x_edge_rpm, self.object_position['upper_label_y']))
+                                (x_edge_rpm, self.object_position['upper_label_y']),
+                                font=self.global_font_name)
             # Position
             self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][0]['mRacePosition']) + '/'
                             + str(game_data['participants']['mNumParticipants']),
                             self.font_size['label'], self.theme_color['label'],
                             (self.object_position['screen_center'][0], self.object_position['upper_label_y']),
-                            horizontal_align='center')
+                            horizontal_align='center', font=self.global_font_name)
 
             # Fuel last lap
             if game_data['timings']['mCurrentTime'] == -1 and game_data['timings']['mLastLapTime'] == -1:
@@ -189,64 +194,71 @@ class Fallback:
             self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
                             self.font_size['fuel'],
                             [(0, self.theme_color['fuel_last_lap'])],
-                            (x_edge_rpm, self.object_position['screen_center'][1]))
+                            (x_edge_rpm, self.object_position['screen_center'][1]),
+                            font=self.global_font_name)
 
             # Last lap fuel label
             self.print_text('Last Fuel Usage', self.font_size['label'], self.theme_color['label'],
                             (x_edge_rpm, self.object_position['screen_center'][1]
-                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6))
+                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6),
+                            font=self.global_font_name)
 
             fwc = self.IN_GAME_FUEL_WARNING and game_data['gameStates']['mSessionState'] == 5
             self.print_fuel_warning(fwc, self.font_size['fuel_warning_text'],
                                     self.theme_color['gear'], (x_edge_rpm, self.display_resolution[1]),
-                                    vertical_align='bottom')
+                                    vertical_align='bottom',
+                                    font=self.global_font_name)
 
         # Fuel label
         self.print_text('Fuel', self.font_size['label'], self.theme_color['label'],
                         (x_edge_rpm, self.object_position['screen_center'][1]
-                         - (gear_surface_rect.height / 2) + fuel_surface_rect.height - self.font_size['fuel'] / 10))
+                         - (gear_surface_rect.height / 2) + fuel_surface_rect.height - self.font_size['fuel'] / 10),
+                        font=self.global_font_name)
 
         # Speed label
         self.print_text('Speed', self.font_size['label'], self.theme_color['label'],
                         (self.display_resolution[0] - x_edge_rpm,
                          self.object_position['screen_center'][1] - speed_surface_rect.height / 2 +
-                         self.font_size['speed'] / 18), 'right', 'bottom')
+                         self.font_size['speed'] / 18), 'right', 'bottom',
+                        font=self.global_font_name)
 
         # Current lap time
         if game_data['timings']['mCurrentTime'] == -1:
-            text = 'n/a'
+            text = '--:--.---'
         else:
             text = self.float_to_time(game_data['timings']['mCurrentTime'])
         lt_surface_rect = self.print_text(text, self.font_size['time'],
                                           self.theme_color['time'],
-                                          (self.display_resolution[0] - x_edge_rpm, self.display_resolution[1]), 'right', 'bottom')
+                                          (self.display_resolution[0] - x_edge_rpm, self.display_resolution[1]),
+                                          'right', 'bottom', font=self.global_font_name)
 
         # Lap time label
         y_lap_time_label = self.display_resolution[1] - lt_surface_rect.height
         ltl_surface_rect = self.print_text('Lap Time', self.font_size['label'], self.theme_color['label'],
                                            (self.display_resolution[0] - x_edge_rpm, y_lap_time_label),
-                                           'right', 'bottom')
+                                           'right', 'bottom', font=self.global_font_name)
 
         # Last lap time
         if game_data['timings']['mLastLapTime'] == -1:
-            text = 'n/a'
+            text = '--:--.---'
         else:
             text = self.float_to_time(game_data['timings']['mLastLapTime'])
         y_llt = y_lap_time_label - ltl_surface_rect.height
         llt_surface_rect = self.print_text(text, self.font_size['time'],
                                           self.theme_color['time'],
                                           (self.display_resolution[0] - x_edge_rpm, y_llt),
-                                           'right', 'bottom')
+                                           'right', 'bottom', font=self.global_font_name)
 
         # Last lap label
         self.print_text('Last Lap', self.font_size['label'], self.theme_color['label'],
                         (self.display_resolution[0] - x_edge_rpm, y_llt - llt_surface_rect.height),
-                        'right', 'bottom')
+                        'right', 'bottom', font=self.global_font_name)
 
         # RPM
         self.print_text(str(int(game_data['carState']['mRpm'])), self.font_size['label'], self.theme_color['rpm'],
                         (self.object_position['screen_center'][0],
-                         self.object_position['screen_center'][1] - gear_surface_rect.height / 2), 'center', 'top')
+                         self.object_position['screen_center'][1] - gear_surface_rect.height / 2), 'center', 'top',
+                        font=self.global_font_name)
 
         # Time Behind
         if game_data['timings']['mSplitTimeBehind'] == -1:
@@ -255,12 +267,13 @@ class Fallback:
             text = '+ ' + self.float_to_time(game_data['timings']['mSplitTimeBehind'], True)
         tb_surface_rect = self.print_text(text, self.font_size['time'], self.theme_color['time_behind'],
                                           (self.object_position['screen_center'][0], self.display_resolution[1]),
-                                          'center', 'bottom')
+                                          'center', 'bottom', font=self.global_font_name)
 
         # Time Behind Label
         y_tbl = self.display_resolution[1] - tb_surface_rect.height
         tbl_surface_rect = self.print_text('Split Time Behind', self.font_size['label'], self.theme_color['label'],
-                                           (self.object_position['screen_center'][0], y_tbl), 'center', 'bottom')
+                                           (self.object_position['screen_center'][0], y_tbl), 'center', 'bottom',
+                                           font=self.global_font_name)
 
         # Time Ahead
         if game_data['timings']['mSplitTimeAhead'] == -1:
@@ -270,11 +283,12 @@ class Fallback:
         y_ta = y_tbl - tbl_surface_rect.height
         ta_surface_rect = self.print_text(text, self.font_size['time'], self.theme_color['time_ahead'],
                                           (self.object_position['screen_center'][0], y_ta),
-                                          'center', 'bottom')
+                                          'center', 'bottom', font=self.global_font_name)
 
         # Time Ahead Label
         self.print_text('Split Time Ahead', self.font_size['label'], self.theme_color['label'],
-                        (self.object_position['screen_center'][0], y_ta - ta_surface_rect.height), 'center', 'bottom')
+                        (self.object_position['screen_center'][0], y_ta - ta_surface_rect.height), 'center', 'bottom',
+                        font=self.global_font_name)
 
     # Methods below are optional. I made these only for this theme.
     def draw_flash(self, object_name, condition, function_if_cond_true, function_if_cond_false):
