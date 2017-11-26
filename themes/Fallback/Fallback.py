@@ -1,8 +1,6 @@
 # TODO:
-# - Change fuel warning with icon instead of text
-# - Change fuel to double digit
-# - Fuel label position unstable
 # - Add digital mono license to README
+# - Fix vibrating elements
 
 import os
 
@@ -72,6 +70,7 @@ class Fallback:
             'counter_max': 20
         }
     }
+    images = {}
 
     # These methods are needed and should be exist in every theme class:
     # __init__(self, pygame, screen, display_resolution)
@@ -104,6 +103,11 @@ class Fallback:
             self.font_size['fuel_warning_text'] = int(self.display_resolution[1] / 6)
         if self.font_size['time'] is None:
             self.font_size['time'] = int(self.display_resolution[1] / 10)
+
+        # Load fuel image
+        fuel_img = pygame.image.load(os.path.dirname(os.path.realpath(__file__)) + '/img/fuel.png')
+        img_size = int(display_resolution[1] / 4.8)
+        self.images['fuel'] = pygame.transform.scale(fuel_img, (img_size, img_size))
 
     def refresh(self, game_data):
         """
@@ -146,12 +150,20 @@ class Fallback:
                                                self.object_position['screen_center'][1]),
                                               'right', 'middle', font=self.global_font_name)
 
+        fuel_font = os.path.dirname(os.path.realpath(__file__)) + '/font/digital-7.ttf'
+
         fuel_surface_rect = self.print_fuel(game_data['carState']['mFuelLevel'], game_data['carState']['mFuelCapacity'],
                                             self.font_size['fuel'],
                                             self.theme_color['fuel'],
                                             (x_edge_rpm, self.object_position['screen_center'][1]
                                              - (gear_surface_rect.height / 2)),
-                                            font=self.global_font_name)
+                                            font=fuel_font)
+
+        # Fuel label
+        self.print_text('Fuel', self.font_size['label'], self.theme_color['label'],
+                        (x_edge_rpm, self.object_position['screen_center'][1]
+                         - (gear_surface_rect.height / 2) + int(fuel_surface_rect.height * 1.1)),
+                        font=self.global_font_name)
 
         # On game only calculations
         if game_data['participants']['mNumParticipants'] != -1:
@@ -199,29 +211,21 @@ class Fallback:
                 else:
                     self.IN_GAME_FUEL_WARNING = False
 
-            self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
-                            self.font_size['fuel'],
-                            [(0, self.theme_color['fuel_last_lap'])],
-                            (x_edge_rpm, int(self.object_position['screen_center'][1] * 0.98)),
-                            font=self.global_font_name)
+            lfu_surface_rect = self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
+                                               self.font_size['fuel'],
+                                               [(0, self.theme_color['fuel_last_lap'])],
+                                               (x_edge_rpm, int(self.object_position['screen_center'][1] * 0.98)),
+                                               font=fuel_font)
 
             # Last lap fuel label
             self.print_text('Last Fuel Usage', self.font_size['label'], self.theme_color['label'],
-                            (x_edge_rpm, self.object_position['screen_center'][1]
-                             + (gear_surface_rect.height / 2) - self.font_size['fuel'] / 6),
+                            (x_edge_rpm,
+                             int(self.object_position['screen_center'][1] * 0.98) + int(lfu_surface_rect.height * 1.1)),
                             font=self.global_font_name)
 
             fwc = self.IN_GAME_FUEL_WARNING and game_data['gameStates']['mSessionState'] == 5
-            self.print_fuel_warning(fwc, self.font_size['fuel_warning_text'],
-                                    self.theme_color['gear'], (x_edge_rpm, self.display_resolution[1]),
-                                    vertical_align='bottom',
-                                    font=self.global_font_name)
-
-        # Fuel label
-        self.print_text('Fuel', self.font_size['label'], self.theme_color['label'],
-                        (x_edge_rpm, self.object_position['screen_center'][1]
-                         - (gear_surface_rect.height / 2) + fuel_surface_rect.height),
-                        font=self.global_font_name)
+            self.print_fuel_warning(fwc, (x_edge_rpm, int(self.display_resolution[1] * 0.98)
+                                          - self.images['fuel'].get_rect().height))
 
         # Speed label
         self.print_text('km/h', self.font_size['label'], self.theme_color['label'],
@@ -236,11 +240,12 @@ class Fallback:
             text = self.float_to_time(game_data['timings']['mCurrentTime'])
         lt_surface_rect = self.print_text(text, self.font_size['time'],
                                           self.theme_color['time'],
-                                          (self.display_resolution[0] - x_edge_rpm, self.display_resolution[1] * 0.98),
+                                          (self.display_resolution[0] - x_edge_rpm,
+                                           int(self.display_resolution[1] * 0.98)),
                                           'right', 'bottom', font=self.global_font_name)
 
         # Lap time label
-        y_lap_time_label = self.display_resolution[1] * 0.98 - lt_surface_rect.height
+        y_lap_time_label = int(self.display_resolution[1] * 0.98) - lt_surface_rect.height
         ltl_surface_rect = self.print_text('Lap Time', self.font_size['label'], self.theme_color['label'],
                                            (self.display_resolution[0] - x_edge_rpm, y_lap_time_label),
                                            'right', 'bottom', font=self.global_font_name)
@@ -277,11 +282,12 @@ class Fallback:
                 text = '- '
             text += self.float_to_time(game_data['timings']['mSplitTimeBehind'], True)
         tb_surface_rect = self.print_text(text, self.font_size['time'], self.theme_color['time_behind'],
-                                          (self.object_position['screen_center'][0], self.display_resolution[1] * 0.98),
+                                          (self.object_position['screen_center'][0],
+                                           int(self.display_resolution[1] * 0.98)),
                                           'center', 'bottom', font=self.global_font_name)
 
         # Time Behind Label
-        y_tbl = self.display_resolution[1] * 0.98 - tb_surface_rect.height
+        y_tbl = int(self.display_resolution[1] * 0.98) - tb_surface_rect.height
         tbl_surface_rect = self.print_text('Split Time Behind', self.font_size['label'], self.theme_color['label'],
                                            (self.object_position['screen_center'][0], y_tbl), 'center', 'bottom',
                                            font=self.global_font_name)
@@ -378,15 +384,13 @@ class Fallback:
 
         self.draw_flash('background', condition(), function_if_cond_true, function_if_cond_false)
 
-    def print_fuel_warning(self, cond, font_size, color, pos, horizontal_align='left', vertical_align='top', font=None,
-                           anti_aliasing=True, screen=None):
+    def print_fuel_warning(self, cond, pos, screen=None):
         if screen is None:
             screen = self.screen
 
         # Flash condition is met
         def function_if_cond_true():
-            self.print_text('FUEL', font_size, color, pos,
-                            horizontal_align, vertical_align, font, anti_aliasing, screen)
+            self.screen.blit(self.images['fuel'], pos)
 
         # No flashing
         def function_if_cond_false():
