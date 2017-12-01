@@ -16,6 +16,9 @@ def main(args):
     pygame.init()
     clock = pygame.time.Clock()
 
+    # Hide mouse cursor
+    pygame.mouse.set_visible(False)
+
     # Set game display
     if config.get('global', 'FULLSCREEN') == '1':
         fullscreen = pygame.FULLSCREEN
