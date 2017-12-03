@@ -167,15 +167,17 @@ class Fallback:
 
         # On game only calculations
         if game_data['participants']['mNumParticipants'] != -1:
+            player_id = game_data['participants']['mViewedParticipantIndex']
+                        
             # Driver name
-            self.print_text(game_data['participants']['mParticipantInfo'][0]['mName'],
+            self.print_text(game_data['participants']['mParticipantInfo'][player_id]['mName'],
                             self.font_size['label'], self.theme_color['label'],
                             (self.display_resolution[0] - x_edge_rpm, self.object_position['upper_label_y']),
                             horizontal_align='right', vertical_align='top', font=self.global_font_name)
 
             # Lap or remaining time
             if game_data['timings']['mEventTimeRemaining'] == -1:   # Indeed lap race
-                lap = str(game_data['participants']['mParticipantInfo'][0]['mCurrentLap'])
+                lap = str(game_data['participants']['mParticipantInfo'][player_id]['mCurrentLap'])
                 total_laps = str(game_data['eventInformation']['mLapsInEvent'])
                 self.print_text('LAP: ' + lap + '/' + total_laps, self.font_size['label'],
                                 self.theme_color['label'], (x_edge_rpm, self.object_position['upper_label_y']),
@@ -186,7 +188,7 @@ class Fallback:
                                 (x_edge_rpm, self.object_position['upper_label_y']),
                                 font=self.global_font_name)
             # Position
-            self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][0]['mRacePosition']) + '/'
+            self.print_text(' POS: ' + str(game_data['participants']['mParticipantInfo'][player_id]['mRacePosition']) + '/'
                             + str(game_data['participants']['mNumParticipants']),
                             self.font_size['label'], self.theme_color['label'],
                             (self.object_position['screen_center'][0], self.object_position['upper_label_y']),
@@ -205,7 +207,7 @@ class Fallback:
                 # Not enough fuel warning
                 if self.IN_GAME_LAST_FUEL_USAGE \
                         * (game_data['eventInformation']['mLapsInEvent']
-                               - game_data['participants']['mParticipantInfo'][0]['mLapsCompleted']) \
+                               - game_data['participants']['mParticipantInfo'][player_id]['mLapsCompleted']) \
                         > game_data['carState']['mFuelLevel']:
                     self.IN_GAME_FUEL_WARNING = True
                 else:
