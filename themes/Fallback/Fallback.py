@@ -195,23 +195,29 @@ class Fallback:
                             horizontal_align='center', font=self.global_font_name)
 
             # Fuel last lap
-            if game_data['timings']['mCurrentTime'] == -1 and game_data['timings']['mLastLapTime'] == -1:
+            try:
+                if game_data['timings']['mCurrentTime'] == -1 and game_data['timings']['mLastLapTime'] == -1:
+                    self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
+                    self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
+                    self.IN_GAME_LAST_FUEL_USAGE = 0
+                    self.IN_GAME_FUEL_WARNING = False
+                elif game_data['timings']['mLastLapTime'] != self.IN_GAME_LAST_LAP_TIME:
+                    self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
+                    self.IN_GAME_LAST_FUEL_USAGE = self.IN_GAME_CURRENT_FUEL - game_data['carState']['mFuelLevel']
+                    self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
+                    # Not enough fuel warning
+                    if self.IN_GAME_LAST_FUEL_USAGE \
+                            * (game_data['eventInformation']['mLapsInEvent']
+                                   - game_data['participants']['mParticipantInfo'][player_id]['mLapsCompleted']) \
+                            > game_data['carState']['mFuelLevel']:
+                        self.IN_GAME_FUEL_WARNING = True
+                    else:
+                        self.IN_GAME_FUEL_WARNING = False
+            except AttributeError:
                 self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
-                self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
                 self.IN_GAME_LAST_FUEL_USAGE = 0
                 self.IN_GAME_FUEL_WARNING = False
-            elif game_data['timings']['mLastLapTime'] != self.IN_GAME_LAST_LAP_TIME:
-                self.IN_GAME_LAST_LAP_TIME = game_data['timings']['mLastLapTime']
-                self.IN_GAME_LAST_FUEL_USAGE = self.IN_GAME_CURRENT_FUEL - game_data['carState']['mFuelLevel']
-                self.IN_GAME_CURRENT_FUEL = game_data['carState']['mFuelLevel']
-                # Not enough fuel warning
-                if self.IN_GAME_LAST_FUEL_USAGE \
-                        * (game_data['eventInformation']['mLapsInEvent']
-                               - game_data['participants']['mParticipantInfo'][player_id]['mLapsCompleted']) \
-                        > game_data['carState']['mFuelLevel']:
-                    self.IN_GAME_FUEL_WARNING = True
-                else:
-                    self.IN_GAME_FUEL_WARNING = False
+                self.IN_GAME_LAST_LAP_TIME =  game_data['timings']['mLastLapTime']
 
             lfu_surface_rect = self.print_fuel(self.IN_GAME_LAST_FUEL_USAGE, game_data['carState']['mFuelCapacity'],
                                                self.font_size['fuel'],
