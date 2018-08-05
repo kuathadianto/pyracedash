@@ -8,6 +8,8 @@ __Note: Click image to see the video!__
 
 [![pyracedashdemo2](http://img.youtube.com/vi/ohn47yIm4SM/0.jpg)](https://www.youtube.com/watch?v=ohn47yIm4SM)
 
+[![pyracedashdemo3](http://img.youtube.com/vi/8caDRBJMeWU/0.jpg)](https://www.youtube.com/watch?v=8caDRBJMeWU)
+
 _TODO: Add complete tutorial how to build video!_
 
 ## Prerequisites
