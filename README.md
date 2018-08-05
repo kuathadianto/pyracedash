@@ -2,7 +2,12 @@
 __pyracedash__ is an application for [Project CARS](http://store.steampowered.com/app/234630/Project_CARS/) and [Project CARS 2](http://store.steampowered.com/app/378860/Project_CARS_2/) which displays __in-game informations__ like RPM and speed. This application is intended to run on a [Raspberry Pi](https://www.raspberrypi.org/) with an LCD display and act as traditional [car dashboard](https://en.wikipedia.org/wiki/Dashboard). Although it is intended to run on a Raspberry Pi, it is not restricted to use this application on a standard PC/laptop running Windows, Mac OSX or Linux. __pyracedash__ is completely written in [Python](https://www.python.org/).
 
 ## Demo
-_TODO: Add project video!_
+__Note: Click image to see the video!__
+[![pyracedashdemo1](http://img.youtube.com/vi/dBqbHMIZYLk/0.jpg)](https://www.youtube.com/watch?v=dBqbHMIZYLk)
+
+[![pyracedashdemo2](http://img.youtube.com/vi/ohn47yIm4SM/0.jpg)](https://www.youtube.com/watch?v=ohn47yIm4SM)
+
+_TODO: Add complete tutorial how to build video!_
 
 ## Prerequisites
 [Project CARS REST API or CREST for short](https://cars-rest-api.com/) (ver. 1.0.2) should be running on host computer (the computer that runs the game) before the game is started, so that __pyracedash__ can get informations from the host computer. To do this, you can simply download the REST API [here](https://cars-rest-api.com/files/CREST-1.0.2.zip), unzip it, then run __CREST-1.0.2.exe__ before starting the game.
