@@ -3,6 +3,7 @@ __pyracedash__ is an application for [Project CARS](http://store.steampowered.co
 
 ## Demo
 __Note: Click image to see the video!__
+
 [![pyracedashdemo1](http://img.youtube.com/vi/dBqbHMIZYLk/0.jpg)](https://www.youtube.com/watch?v=dBqbHMIZYLk)
 
 [![pyracedashdemo2](http://img.youtube.com/vi/ohn47yIm4SM/0.jpg)](https://www.youtube.com/watch?v=ohn47yIm4SM)
